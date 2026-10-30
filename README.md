@@ -1,269 +1,774 @@
-****📘 IncidentIQ – AI-Driven Log Intelligence & Root-Cause Analysis Platform****
+# IntelliOps – Intelligent Log Analysis Platform
 
-Spring Boot 3 · Redis Stack Vector Search · Async Pipelines · RAG Evidence Retrieval · Gemini/OpenAI LLM · AIOps
-🚀 Overview
+> An AI-powered platform for intelligent log analysis, semantic search, automated anomaly detection, and incident root-cause analysis.
 
-IncidentIQ is a production-style AI-powered log intelligence platform that ingests application logs, stores semantic vectors in Redis, performs hybrid KNN search, and generates automated Root-Cause Analysis (RCA) using an LLM.
+IntelliOps is an intelligent log analysis and incident management platform designed to help developers and DevOps teams understand application failures faster.
 
-The system mimics real-world AIOps platforms (Datadog, Splunk, New Relic, Harness) and is built with distributed backend patterns, async workers, vector indexing, and retrieval-augmented reasoning.
+The system ingests application logs, processes them into searchable chunks, generates vector embeddings, stores them in Redis for semantic and hybrid search, automatically detects abnormal error spikes, and uses Generative AI to analyze incidents and identify probable root causes.
 
-🎯 Key Features
-✔ High-throughput Log Ingestion Pipeline
+---
 
-Asynchronous ingestion pipeline using Redis queue + worker threads
+## 🚀 Key Features
 
-Custom chunker pipeline
+### 1. Intelligent Log Ingestion
+- Upload application log files through the REST API.
+- Logs are divided into manageable chunks.
+- Each chunk is processed asynchronously through a Redis-based ingestion queue.
+- Log metadata such as source, file name, chunk number, and job ID is maintained.
 
-Supports file uploads + inline logs
+### 2. Semantic Log Search
+- Converts log information into vector embeddings.
+- Stores embeddings in Redis.
+- Uses vector similarity search to retrieve semantically relevant logs.
+- Allows users to search for logs using natural-language queries instead of exact keywords.
 
-Processes 10,000+ log events/sec
+### 3. Hybrid Search
+Combines:
+- Keyword-based filtering
+- Vector similarity search
 
-✔ Redis Stack Vector Search (KNN + Hybrid Search)
+This improves search accuracy when both exact technical terms and semantic meaning are important.
 
-Uses cosine similarity with 3072-dim embeddings
+### 4. AI-Powered Root Cause Analysis
+Generative AI analyzes relevant log evidence and produces:
 
-Supports pure semantic search AND hybrid text+vector search
+- Root cause summary
+- Probable root cause
+- Business/system impact
+- Recommended actions
+- Confidence level
+- Supporting log evidence
 
-Efficient storage using FLOAT32 binary vectors
+Example query:
 
-✔ AI Root-Cause Analysis (RCA) Engine
-
-LLM processes:
-
-Timeout patterns
-
-OOM errors
-
-Latency spikes
-
-Deadlocks
-
-DB connection failures
-
-JVM crash patterns
-
-Outputs structured JSON:
-
-Summary
-
-Root Cause
-
-Impact
-
-Recommended remediation steps
-
-Confidence score
-
-Evidence logs retrieved from Redis vector DB
-
-✔ End-to-End RAG-Style Evidence Retrieval
-
-Query → Embed → KNN on vectors → Top-K evidence → LLM reasoning
-
-Uses Gemini/OpenAI through Spring AI
-
-Ensures context-aware RCA
-
-✔ Clean Architecture
-
-Controllers → Services → Workers → Redis Vector Store
-
-Background worker for processing chunks
-
-Fully decoupled ingestion & analysis pipeline
+```text
+Why did the payment processing fail for order ORD-1001?
 ```
-🧩 Architecture Diagram
-                      ┌──────────────────────┐
-                      │   Client / API User   │
-                      └──────────┬───────────┘
-                                 │
-                                 ▼
-                    ┌──────────────────────────┐
-                    │   Log Ingestion API       │
-                    └──────────┬───────────────┘
-                               │
-                               ▼
-                  ┌──────────────────────────┐
-                  │   LogChunkService         │
-                  │  (chunk + enqueue)        │
-                  └──────────┬───────────────┘
-                             │ Redis Queue (BRPOP)
-                             ▼
-                 ┌────────────────────────────┐
-                 │  IngestionWorker (Async)   │
-                 │  embed + store in Redis    │
-                 └──────────┬─────────────────┘
-                            │
-                            ▼
-                ┌────────────────────────────────┐
-                │ Redis Stack (Vector Index)      │
-                │ - VECTOR FLAT Index             │
-                │ - COSINE KNN search             │
-                │ - Metadata fields               │
-                └─────────────────────────────────┘
-                            ▲
-                            │
-                            ▼
-               ┌─────────────────────────────────┐
-               │ SearchService (Hybrid KNN)       │
-               └───────────┬──────────────────────┘
-                           │ evidence logs
-                           ▼
-              ┌──────────────────────────────────┐
-              │   IncidentInsightService (LLM)    │
-              │   - prompt engineering            │
-              │   - JSON enforcement              │
-              └──────────────────────────────────┘
-                             │
-                             ▼
-               ┌──────────────────────────────────┐
-               │ Structured RCA JSON Response      │
-               └──────────────────────────────────┘
+
+The system retrieves relevant logs and sends the evidence to the AI service for analysis.
+
+### 5. Automatic Anomaly Detection
+IntelliOps continuously monitors ingested log chunks.
+
+When an abnormal increase in error messages is detected, the system can automatically create an incident.
+
+For example:
+
+```text
+Error spike detected
+        ↓
+Anomaly detected
+        ↓
+Incident automatically created
+        ↓
+Severity assigned
+        ↓
+Root cause information recorded
+        ↓
+Incident displayed on dashboard
 ```
-🏗️ Tech Stack
-Backend
 
-Spring Boot 3.4
+### 6. Incident Management
+The platform provides APIs for managing detected incidents.
 
-Spring AI (OpenAI/Gemini Client)
+Each incident contains information such as:
 
-Lombok
+- Incident ID
+- Title
+- Severity
+- Description
+- Source query
+- Root cause
+- Impact
+- Recommended actions
+- Confidence level
+- Status
+- Created/updated timestamps
 
-AI & Vector Search
+Supported incident statuses:
 
-Google Gemini / OpenAI / Groq
-
-Redis Stack (Search + Vector)
-
-Data & Storage
-
-Redis Vector Index (FLOAT32)
-
-Redis Hash for metadata
-
-Redis Queue (BRPOP)
-
-Concurrency
-
-Async ingestion worker threads
-
-Producer–consumer queue model
+```text
+OPEN
+IN_PROGRESS
+RESOLVED
 ```
-📦 Project Structure
-src/main/java/com/incidentiq
-│
-├── controller
-│   ├── InsightController.java
-│   ├── JobController.java
-│   ├── LogUploadController.java
-│   └── SearchController.java
-│
-├── service
-│   ├── EmbeddingService.java
-│   ├── GeminiEmbeddingClient.java
-│   ├── GeminiChatClient.java
-│   ├── IncidentInsightService.java
-│   ├── IngestionService.java
-│   ├── IngestionWorker.java
-│   ├── LogChunkService.java
-│   ├── VectorStoreService.java
-│   ├── RediSearchKnnService.java
-│   └── SearchService.java
-│
-├── model
-│   ├── LogChunk.java
-│   ├── IngestionJob.java
-│   ├── RootCauseInsight.java
-│   └── SearchHit.java
-│
-├── config
-│   ├── Config.java
-│   ├── RedisConfig.java
-│   └── RedisVectorInitializer.java
-│
-└── util
-    └── RedisSearchCommand.java
+
+### 7. Interactive Dashboard
+A React-based dashboard provides a visual interface for monitoring:
+
+- Incidents
+- Severity
+- Incident status
+- Root cause information
+- Log analysis results
+- System information
+
+---
+
+# 🏗️ System Architecture
+
+```text
+                         ┌──────────────────────┐
+                         │      React UI        │
+                         │      Dashboard       │
+                         └──────────┬───────────┘
+                                    │
+                                    │ REST APIs
+                                    ▼
+                    ┌──────────────────────────────┐
+                    │       Spring Boot Backend    │
+                    │                              │
+                    │  Controllers                 │
+                    │  Services                    │
+                    │  Incident Management         │
+                    │  Search & AI Analysis        │
+                    │  Anomaly Detection           │
+                    └───────┬─────────┬────────────┘
+                            │         │
+                ┌───────────┘         └──────────────┐
+                ▼                                    ▼
+       ┌──────────────────┐                 ┌──────────────────┐
+       │      Redis       │                 │   PostgreSQL     │
+       │                  │                 │                  │
+       │ Ingestion Queue  │                 │    Incidents     │
+       │ Vector Embedding │                 │    Metadata      │
+       │ Semantic Search  │                 │    Application   │
+       │ RediSearch       │                 │    Data          │
+       └────────┬─────────┘                 └──────────────────┘
+                │
+                ▼
+       ┌──────────────────┐
+       │   AI / Gemini    │
+       │                  │
+       │ Root Cause       │
+       │ Analysis         │
+       │ Recommendations  │
+       └──────────────────┘
 ```
-🧪 How to Run
-1. Start Redis Stack
-docker-compose up -d
 
-2. Set your Gemini/OpenAI key
-export GEMINI_API_KEY="your_api_key"
+---
 
-3. Run the application
-mvn spring-boot:run
+# 🔄 Application Workflow
+
+## Log Analysis Workflow
+
+```text
+Log File
+   │
+   ▼
+Log Upload API
+   │
+   ▼
+Log Chunking
+   │
+   ▼
+Redis Ingestion Queue
+   │
+   ▼
+Background Ingestion Worker
+   │
+   ├───────────────► Generate Embeddings
+   │                       │
+   │                       ▼
+   │                  Redis Vector Store
+   │
+   ▼
+Error Analysis
+   │
+   ▼
+Anomaly Detection
+   │
+   ▼
+Incident Creation
 ```
-🔍 Testing the APIs
-1. Ping
-GET /insights/ping
 
-2. Ingest Logs
-Inline text ingestion
-curl -X POST http://localhost:8080/jobs/ingestText \
-     -H "Content-Type: text/plain" \
-     --data "DB timeout after 30s..."
+## Root Cause Analysis Workflow
 
-File upload
-curl -F "file=@logs.txt" http://localhost:8080/logs/upload
+```text
+User Query
+    │
+    ▼
+Search API
+    │
+    ▼
+Semantic / Hybrid Search
+    │
+    ▼
+Relevant Log Evidence
+    │
+    ▼
+Gemini AI
+    │
+    ▼
+Root Cause Analysis
+    │
+    ├── Root Cause
+    ├── Impact
+    ├── Recommended Actions
+    └── Confidence
+    │
+    ▼
+Incident / Dashboard
+```
 
-3. Check ingestion job
-GET /jobs/{jobId}
+---
 
-4. Semantic Search
-GET /search/semantic?query=db timeout&k=3
+# 🛠️ Technology Stack
 
-5. Root Cause Analysis
-curl -X POST http://localhost:8080/insights/root-cause \
-     -H "Content-Type: application/json" \
-     -d '{
-           "query": "Why is the payment service failing?",
-           "topK": 5
-         }'
+## Backend
 
-📊 Example RCA Output
+- Java 21
+- Spring Boot
+- Spring Web
+- Spring Data JPA
+- Hibernate
+- Maven
+- REST APIs
+
+## Database
+
+- PostgreSQL
+
+## Search & Processing
+
+- Redis
+- RediSearch
+- Vector Embeddings
+- KNN Vector Search
+- Hybrid Search
+
+## Artificial Intelligence
+
+- Generative AI
+- Gemini API
+- AI-powered Root Cause Analysis
+
+## Frontend
+
+- React
+- JavaScript
+- Vite
+- HTML
+- CSS
+
+## Development Tools
+
+- IntelliJ IDEA / VS Code
+- Git
+- GitHub
+- Postman
+- pgAdmin
+
+---
+
+# 📁 Project Structure
+
+```text
+IntelliOps-Intelligent-Log-Analysis-Platform/
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vite.config.js
+│
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── incidentiq/
+│   │   │           ├── config/
+│   │   │           ├── controller/
+│   │   │           ├── model/
+│   │   │           ├── repository/
+│   │   │           ├── service/
+│   │   │           └── util/
+│   │   │
+│   │   └── resources/
+│   │       └── application.yaml
+│   │
+│   └── test/
+│
+├── pom.xml
+├── docker-compose.yml
+├── mvnw
+├── mvnw.cmd
+├── .gitignore
+└── README.md
+```
+
+---
+
+# 🔌 REST API Endpoints
+
+## Log Upload
+
+Upload application logs for processing.
+
+```http
+POST /logs/upload
+```
+
+Content type:
+
+```text
+multipart/form-data
+```
+
+---
+
+## Semantic Search
+
+Search logs using semantic similarity.
+
+```http
+POST /search/semantic
+```
+
+Example request:
+
+```json
 {
-  "summary": "Payment service fails due to DB timeouts and memory leaks.",
-  "root_cause": "OOM caused by connection pool exhaustion during retries.",
-  "impact": "Payment failures for 40% users; upstream gateway latency spike.",
-  "actions": "Fix retry loop, increase pool size, patch memory leak.",
-  "confidence": "HIGH",
-  "evidence": [...]
+  "query": "payment database connection failure",
+  "topK": 5
 }
 ```
-🧠 Why This Project Matters
 
-This platform demonstrates:
+---
 
-Distributed systems design
+## Hybrid Search
 
-Event-driven ingestion
+Perform combined keyword and semantic search.
 
-Vector search & embeddings
+```http
+POST /search/hybrid
+```
 
-RAG for log intelligence
+---
 
-LLM-based reasoning
+## Root Cause Analysis
 
-Production-ready Spring architecture
+Analyze an incident or log-related problem using AI.
 
-AIOps concepts (RCA, anomaly detection)
+```http
+POST /insights/root-cause
+```
 
-This is the type of work done at Datado<img width="1710" height="914" alt="Screenshot 2025-11-30 014642" src="https://github.com/user-attachments/assets/f01f73a0-e714-48c1-af70-865cc677b2d4" />
-g, Splunk, Elastic, Atlassian, New Relic, Zscaler, Freshworks, Harness, AWS, and Microsoft.
-<img width="1695" height="965" alt="Screenshot 2025-11-30 014651" src="https://github.com/user-attachments/assets/45a5a60b-d20f-4a8a-ba0e-819b28fc0d67" />
-![Uploading Screenshot 2025-11-30 014642.png…]()
-<img width="1695" height="965" alt="Screenshot 2025-11-30 014651" src="https://github.com/user-attachments/assets/9851a5d8-95a5-4a21-9351-900aa73a4653" />
+Example request:
 
-<img width="1686" height="725" alt="Screenshot 2025-11-30 014632" src="https://github.com/user-attachments/assets/b701abe1-9191-4e5c-84e7-eca3d4c0bc29" />
-<img width="1693" height="596" alt="Screenshot 2025-11-30 014625" src="https://github.com/user-attachments/assets/db30a2f5-248f-468d-93b2-f72997b0e656" />
+```json
+{
+  "query": "Why did the payment processing fail for order ORD-1001?",
+  "topK": 3
+}
+```
 
-🙌 Contributors
+Example response structure:
 
-Bhanu Prasad Nidumolu
-AI/ML Systems Engineer · Distributed Backend Developer
-📧 bhanunidumol@gmail.com
+```json
+{
+  "query": "Why did the payment processing fail for order ORD-1001?",
+  "rootCauseSummary": "Payment processing failed because of repeated database connection timeouts.",
+  "probableRootCause": "Database connection timeout prevented PaymentService from completing validation and processing.",
+  "impact": "The order could not complete payment processing.",
+  "recommendedActions": [
+    "Check database health",
+    "Inspect database connection pool",
+    "Check network connectivity",
+    "Investigate long-running queries"
+  ],
+  "confidenceLevel": "HIGH"
+}
+```
 
-🔗 GitHub: https://github.com/BhanuNidumolu
+---
 
-🔗 LinkedIn: https://www.linkedin.com/in/bhanu-nidumolu-83a184275/
+## Incident Management
+
+### Get all incidents
+
+```http
+GET /incidents
+```
+
+### Get incident by ID
+
+```http
+GET /incidents/{id}
+```
+
+### Create an incident
+
+```http
+POST /incidents
+```
+
+### Update incident status
+
+```http
+PUT /incidents/{id}/status
+```
+
+### Delete an incident
+
+```http
+DELETE /incidents/{id}
+```
+
+### Filter by status
+
+```http
+GET /incidents/status/{status}
+```
+
+Supported values:
+
+```text
+OPEN
+IN_PROGRESS
+RESOLVED
+```
+
+### Filter by severity
+
+```http
+GET /incidents/severity/{severity}
+```
+
+---
+
+# ⚙️ Prerequisites
+
+Make sure the following are installed:
+
+- Java 21+
+- Maven or Maven Wrapper
+- Node.js
+- npm
+- PostgreSQL
+- Redis with RediSearch support
+- Git
+
+You also need a Gemini API key for AI-powered analysis.
+
+---
+
+# 🔐 Environment Variables
+
+Sensitive credentials should **never be committed to GitHub**.
+
+Configure the following environment variables locally:
+
+```text
+DB_PASSWORD=your_postgresql_password
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+The application configuration uses environment variables instead of storing credentials directly in source code.
+
+Example:
+
+```yaml
+spring:
+  datasource:
+    username: postgres
+    password: ${DB_PASSWORD}
+```
+
+And the AI configuration uses:
+
+```text
+GEMINI_API_KEY
+```
+
+> Never commit your actual API key, database password, `.env` file, or other credentials to GitHub.
+
+---
+
+# 🗄️ Database Setup
+
+Create a PostgreSQL database:
+
+```sql
+CREATE DATABASE intelliops;
+```
+
+Make sure PostgreSQL is running and configure the database credentials through environment variables.
+
+The application uses PostgreSQL for persistent application and incident data.
+
+---
+
+# 🔴 Redis Setup
+
+Redis is required for:
+
+- Log ingestion queue
+- Vector embeddings
+- Semantic search
+- Hybrid search
+- RediSearch indexes
+
+Make sure Redis is running on your configured Redis host and port.
+
+Default Redis configuration:
+
+```text
+Host: localhost
+Port: 6379
+```
+
+---
+
+# ▶️ Running the Backend
+
+From the project root:
+
+### Windows
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Or build the project first:
+
+```powershell
+.\mvnw.cmd clean package
+```
+
+Then run the generated application.
+
+The backend runs on:
+
+```text
+http://localhost:8080
+```
+
+---
+
+# ▶️ Running the Frontend
+
+Navigate to the frontend directory:
+
+```powershell
+cd frontend
+```
+
+Install dependencies:
+
+```powershell
+npm install
+```
+
+Start the development server:
+
+```powershell
+npm run dev
+```
+
+Vite will display the local frontend URL in the terminal.
+
+---
+
+# 🧪 Testing the Application
+
+You can test the REST APIs using:
+
+- Postman
+- Browser
+- React Dashboard
+
+A typical testing flow is:
+
+```text
+1. Start PostgreSQL
+        ↓
+2. Start Redis
+        ↓
+3. Start Spring Boot backend
+        ↓
+4. Start React frontend
+        ↓
+5. Upload logs
+        ↓
+6. Verify log ingestion
+        ↓
+7. Perform semantic/hybrid search
+        ↓
+8. Run AI root-cause analysis
+        ↓
+9. Generate/verify incidents
+        ↓
+10. Monitor incidents from dashboard
+```
+
+---
+
+# 🧠 Example Use Case
+
+Suppose an application generates the following errors:
+
+```text
+PaymentService - Database connection timeout
+PaymentService - Failed to acquire database connection
+PaymentService - Payment processing failed
+```
+
+Instead of manually searching thousands of log lines, a developer can ask:
+
+```text
+Why did the payment processing fail?
+```
+
+IntelliOps:
+
+1. Searches relevant logs.
+2. Retrieves semantically related evidence.
+3. Sends the evidence to the AI analysis layer.
+4. Identifies the probable root cause.
+5. Determines the potential impact.
+6. Generates recommended actions.
+7. Displays the result through the dashboard.
+
+This reduces the time required for manual log investigation and helps developers identify production issues faster.
+
+---
+
+# 📊 Incident Severity
+
+The platform supports incident severity levels such as:
+
+```text
+CRITICAL
+WARNING
+INFO
+MEDIUM
+```
+
+Automatically detected error spikes can generate high-severity incidents requiring investigation.
+
+---
+
+# 🔍 Search Architecture
+
+IntelliOps supports two major search approaches.
+
+### Semantic Search
+
+Uses vector embeddings to identify logs based on their meaning.
+
+For example:
+
+```text
+Query:
+"Why can't the application connect to the database?"
+
+Can retrieve:
+"PaymentService failed to acquire database connection"
+```
+
+Even though the exact words are different, the semantic meaning is similar.
+
+### Hybrid Search
+
+Combines:
+
+```text
+Keyword matching
+       +
+Vector similarity
+       =
+More relevant results
+```
+
+This is useful when searching for technical identifiers such as:
+
+```text
+ORD-1001
+PaymentService
+DatabaseTimeoutException
+```
+
+while still considering the semantic meaning of the query.
+
+---
+
+# 🎯 Project Objectives
+
+The main objectives of IntelliOps are:
+
+- Automate application log analysis.
+- Reduce manual log investigation.
+- Provide semantic log search.
+- Detect abnormal error patterns.
+- Automatically generate incidents.
+- Use Generative AI for root-cause analysis.
+- Provide actionable recommendations.
+- Provide a centralized incident monitoring dashboard.
+
+---
+
+# 🚀 Future Enhancements
+
+Potential future improvements include:
+
+- Prometheus-based application metrics
+- Grafana monitoring dashboards
+- Real-time alerting
+- Email/Slack notifications
+- Advanced anomaly detection algorithms
+- Distributed log ingestion
+- Role-based authentication and authorization
+- Historical incident analytics
+- Support for additional AI models
+- Kubernetes deployment
+- Cloud deployment
+
+---
+
+# 👥 Project Type
+
+**Academic / Final Year Project**
+
+**Project:** IntelliOps – Intelligent Log Analysis Platform
+
+**Domain:** Artificial Intelligence + Backend Engineering + DevOps
+
+**Primary Technologies:** Java, Spring Boot, PostgreSQL, Redis, React, Generative AI
+
+---
+
+# 📌 Conclusion
+
+IntelliOps combines traditional backend engineering, distributed log processing, vector search, anomaly detection, and Generative AI into a single platform for intelligent incident analysis.
+
+The system aims to move application troubleshooting from:
+
+```text
+Manual Log Searching
+        ↓
+Manual Error Identification
+        ↓
+Manual Root Cause Investigation
+```
+
+to:
+
+```text
+Automated Log Processing
+        ↓
+Semantic Search
+        ↓
+Anomaly Detection
+        ↓
+AI Root Cause Analysis
+        ↓
+Actionable Incident Insights
+```
+
+This makes IntelliOps a practical platform for improving the speed and efficiency of application troubleshooting and incident management.
