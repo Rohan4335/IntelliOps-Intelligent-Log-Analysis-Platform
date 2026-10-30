@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/intelliops
+    username: postgres
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      username: ${REDIS_USERNAME:default}
+      password: ${REDIS_PASSWORD:}
+
+
+
+  ai:
+    openai:
+      # Gemini is used via OpenAI-compatible Spring AI OpenAI client
+      api-key: ${GEMINI_API_KEY}
+      base-url: "https://generativelanguage.googleapis.com/v1beta/openai"
+      chat:
+        completions-path: "/chat/completions"
+        options:
+          model: "gemini-3.7-flash"
+
+app:
+  redis:
+    prefix: "emb:"
+    index-name: "idx:logs"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
